@@ -52,6 +52,7 @@ Rails::Initializer.run do |config|
 
   config.gem 'rubytree', :lib => 'tree'
   config.gem 'coderay', :version => '~>0.9.7'
+  config.gem 'httparty'
 
   config.action_controller.session = { :key => "_myapp_session", :secret => "dhgkshgsdhgi2yg78g98ryg89(&*&#(6t94t9284t" }
   

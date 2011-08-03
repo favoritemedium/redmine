@@ -124,7 +124,26 @@ class AccountController < ApplicationController
     end
     redirect_to :action => 'login'
   end
-  
+
+  require "lib/redmine/third_party_auth/facebook"
+
+  def facebook_callback
+    if params[:error]
+      flash.now[:error] = "Facebook login failed. Error message from Facebook: #{params[:error_reason]}, #{params[:error_description]}"
+    else
+      res = Redmine::Facebook.get_access_token params[:code]
+
+      unless res["error"]
+        #success
+        user_info = Redmine::Facebook.get_user_info res["access_token"]
+        facebook_authenticate(user_info)
+      else
+        #error
+        flash.now[:error] = "Facebook login failed. Error message from Facebook: #{res["error"]["type"]}, #{res["error"]["message"]}"
+      end
+    end
+  end
+
   private
   
   def logout_user
@@ -156,7 +175,44 @@ class AccountController < ApplicationController
     end
   end
 
-  
+  def facebook_authenticate(user_info)
+    user = User.find_or_initialize_by_mail(user_info["email"])
+      if user.new_record?
+        # Self-registration off
+          redirect_to(home_url) && return unless Setting.self_registration?
+
+          # Create on the fly
+          user.login = user_info["name"].sub(" ", "").downcase unless user_info['name'].nil?
+          user.mail = user_info['email'] unless user_info['email'].nil?
+          user.firstname = user_info['first_name'] unless user_info['first_name'].nil?
+          user.lastname = user_info['last_name'] unless user_info['last_name'].nil?
+          user.random_password
+          user.register
+
+          case Setting.self_registration
+          when '1'
+            register_by_email_activation(user) do
+              onthefly_creation_failed(user)
+            end
+          when '3'
+            register_automatically(user) do
+              onthefly_creation_failed(user)
+            end
+          else
+            register_manually_by_administrator(user) do
+              onthefly_creation_failed(user)
+            end
+          end
+        else
+          # Existing record
+          if user.active?
+            successful_authentication(user)
+          else
+            account_pending
+          end
+      end
+  end
+
   def open_id_authenticate(openid_url)
     authenticate_with_open_id(openid_url, :required => [:nickname, :fullname, :email], :return_to => signin_url) do |result, identity_url, registration|
       if result.successful?
