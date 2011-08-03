@@ -182,7 +182,7 @@ class AccountController < ApplicationController
           redirect_to(home_url) && return unless Setting.self_registration?
 
           # Create on the fly
-          user.login = user_info["name"].sub(" ", "").downcase unless user_info['name'].nil?
+          user.login = user_info["name"].gsub(" ", "").downcase unless user_info['name'].nil?
           user.mail = user_info['email'] unless user_info['email'].nil?
           user.firstname = user_info['first_name'] unless user_info['first_name'].nil?
           user.lastname = user_info['last_name'] unless user_info['last_name'].nil?
