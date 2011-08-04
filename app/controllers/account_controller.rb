@@ -126,6 +126,7 @@ class AccountController < ApplicationController
   end
 
   require "lib/redmine/third_party_auth/facebook"
+  require "lib/redmine/third_party_auth/google"
 
   def facebook_callback
     if params[:error]
@@ -144,7 +145,25 @@ class AccountController < ApplicationController
     end
   end
 
-  private
+  def google_callback
+    if params[:error]
+      flash.now[:error] = "Google login failed. Error message from Google: #{params[:error]}, #{params[:error_description]}"
+    else
+      res = Redmine::Google.get_access_token_for_account_link params[:code]
+
+      unless res["error"]
+        #success
+        user_info = Redmine::Google.get_user_info res["access_token"]
+        google_authenticate(user_info)
+      else
+        #error
+        flash.now[:error] = "Google login failed. Error message from Google: #{res["error"]["type"]}, #{res["error"]["message"]}"
+        redirect_to "login"
+      end
+    end
+  end
+
+  protected
   
   def logout_user
     if User.current.logged?
@@ -176,12 +195,13 @@ class AccountController < ApplicationController
   end
 
   def facebook_authenticate(user_info)
-    user = User.find_or_initialize_by_mail(user_info["email"])
+    user = User.find_or_initialize_by_facebook_id(user_info["id"])
       if user.new_record?
         # Self-registration off
           redirect_to(home_url) && return unless Setting.self_registration?
 
           # Create on the fly
+          user.facebook_id = user_info["id"]
           user.login = user_info["name"].gsub(" ", "").downcase unless user_info['name'].nil?
           user.mail = user_info['email'] unless user_info['email'].nil?
           user.firstname = user_info['first_name'] unless user_info['first_name'].nil?
@@ -210,6 +230,20 @@ class AccountController < ApplicationController
           else
             account_pending
           end
+      end
+  end
+
+  def google_authenticate(user_info)
+    user = User.find_by_google_email(user_info["email"])
+      if user
+          # Existing record
+          if user.active?
+            successful_authentication(user)
+          else
+            account_pending
+          end
+      else
+        invalid_credentials
       end
   end
 

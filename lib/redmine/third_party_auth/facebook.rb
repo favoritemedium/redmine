@@ -26,8 +26,33 @@ module Redmine
       end
     end
 
+    def self.account_link_redirect_uri user
+      if Rails.env == "development"
+        "http://manchego.favoritemedium.net:3000/facebook_callback?user_id=#{user.id}"
+      else #if Rails.env == "production"
+        "http://favoritemedium.com:8080/redmine-dev2facebook_callback?user_id=#{user.id}"
+      end
+    end
+
     def self.sign_in_url
       "https://www.facebook.com/dialog/oauth?client_id=#{client_id}&redirect_uri=#{redirect_uri}&scope=email"
+    end
+
+    def self.account_link_url user
+      "https://www.facebook.com/dialog/oauth?client_id=#{client_id}&redirect_uri=#{account_link_redirect_uri(user)}&scope=email"
+    end
+
+    def self.get_access_token_for_account_link code, user
+      res = HTTParty.post("https://graph.facebook.com/oauth/access_token?", :body => {
+          :client_id => client_id, :client_secret => client_secret,
+          :redirect_uri => account_link_redirect_uri(user), :code => code
+      })
+
+      if res["error"]
+        res
+      else
+        Rack::Utils.parse_nested_query(res) #for some qired reason httparty don't parse this correctly
+      end
     end
 
     def self.get_access_token code
