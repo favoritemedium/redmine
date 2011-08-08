@@ -11,7 +11,7 @@ ActionController::Routing::Routes.draw do |map|
   map.signin 'login', :controller => 'account', :action => 'login'
   map.signout 'logout', :controller => 'account', :action => 'logout'
 
-  map.connect "account/facebook_callback", :controller => "account", :action  => "facebook_callback"
+  #map.connect "account/facebook_callback", :controller => "account", :action  => "facebook_callback"
   map.connect "facebook_callback", :controller => "auth_callback", :action => "facebook"
   map.connect "oauth2callback", :controller => "auth_callback", :action => "google"
 

@@ -195,56 +195,26 @@ class AccountController < ApplicationController
   end
 
   def facebook_authenticate(user_info)
-    user = User.find_or_initialize_by_facebook_id(user_info["id"])
-      if user.new_record?
-        # Self-registration off
-          redirect_to(home_url) && return unless Setting.self_registration?
-
-          # Create on the fly
-          user.facebook_id = user_info["id"]
-          user.login = user_info["name"].gsub(" ", "").downcase unless user_info['name'].nil?
-          user.mail = user_info['email'] unless user_info['email'].nil?
-          user.firstname = user_info['first_name'] unless user_info['first_name'].nil?
-          user.lastname = user_info['last_name'] unless user_info['last_name'].nil?
-          user.random_password
-          user.register
-
-          case Setting.self_registration
-          when '1'
-            register_by_email_activation(user) do
-              onthefly_creation_failed(user)
-            end
-          when '3'
-            register_automatically(user) do
-              onthefly_creation_failed(user)
-            end
-          else
-            register_manually_by_administrator(user) do
-              onthefly_creation_failed(user)
-            end
-          end
-        else
-          # Existing record
-          if user.active?
-            successful_authentication(user)
-          else
-            account_pending
-          end
-      end
+    third_party_auth User.find_by_facebook_id(user_info["id"])
   end
 
   def google_authenticate(user_info)
-    user = User.find_by_google_email(user_info["email"])
-      if user
-          # Existing record
-          if user.active?
-            successful_authentication(user)
-          else
-            account_pending
-          end
+    third_party_auth User.find_by_google_email(user_info["email"])
+  end
+
+  def third_party_auth user
+    if user && user.type != AnonymousUser
+      # Existing record
+      if user.active?
+        successful_authentication(user)
       else
-        invalid_credentials
+        account_pending
       end
+    else
+      invalid_credentials
+      #render :action => "login"
+      redirect_to :action => "login", :controller => "account"
+    end
   end
 
   def open_id_authenticate(openid_url)
