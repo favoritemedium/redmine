@@ -25,6 +25,7 @@ class AuthCallbackController < AccountController
   def google
     if params[:error]
       flash.now[:error] = "Google login failed. Error message from Google: #{params[:error_reason]}, #{params[:error_description]}"
+      redirect_to(:controller => "my", :action => "account")
     else
       res = Redmine::Google.get_access_token_for_account_link params[:code]
 
