@@ -22,7 +22,7 @@ module Redmine
       if Rails.env == "development"
         "http://manchego.favoritemedium.net:3000/account/facebook_callback"
       else #if Rails.env == "production"
-        "http://favoritemedium.com:8080/redmine-dev2/account/facebook_callback"
+        "http://rangoon.favoritemedium.net/redmine-yasith/account/facebook_callback"
       end
     end
 
@@ -30,7 +30,7 @@ module Redmine
       if Rails.env == "development"
         "http://manchego.favoritemedium.net:3000/facebook_callback?user_id=#{user.id}"
       else #if Rails.env == "production"
-        "http://favoritemedium.com:8080/redmine-dev2/facebook_callback?user_id=#{user.id}"
+        "http://rangoon.favoritemedium.net/redmine-yasith/facebook_callback?user_id=#{user.id}"
       end
     end
 
