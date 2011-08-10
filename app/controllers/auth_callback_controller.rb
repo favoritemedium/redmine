@@ -34,11 +34,8 @@ class AuthCallbackController < AccountController
         user_info = Redmine::Google.get_user_info res["access_token"]
         #google_authenticate(user_info)
         if User.current.type != "AnonymousUser" && User.current.type != AnonymousUser
-          associate_google_account_with_user(user_info, User.current)
-          redirect_to(:controller => "my", :action => "account")
+          @email = session[:google_auth_email] = user_info["email"]
         else
-           #internal_redirect_to(:controller => "account", :action => "google_callback", :code => params[:code])
-          #HTTParty.get("http://127.0.0.1:3000/account/google_callback?code=#{params[:code]}")
           google_authenticate user_info
         end
       else
@@ -47,6 +44,13 @@ class AuthCallbackController < AccountController
         redirect_to(:controller => "my", :action => "account")
       end
     end
+  end
+
+  def google_confirm
+    unless session[:google_auth_email].blank?
+      associate_google_account_with_user(session[:google_auth_email], User.current)
+    end
+    redirect_to(:controller => "my", :action => "account")
   end
 
   def unlink_google
@@ -66,8 +70,8 @@ class AuthCallbackController < AccountController
   end
 
   private
-  def associate_google_account_with_user user_info, user
-    user.google_email = user_info["email"]
+  def associate_google_account_with_user email, user
+    user.google_email = email
     user.save
   end
 

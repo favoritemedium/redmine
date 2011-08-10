@@ -1,0 +1,3 @@
+<p>Do you want to associate your account with the google account <strong><%= @email %></strong>?</p>
+<p><%= link_to "Yes", :controller => "auth_callback", :action => "google_confirm" %>
+<%= link_to "No", :controller => "my", :action => "account" %></p>
